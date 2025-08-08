@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bug Report Form</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f2f4f8;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+
+    /* Top Right User Box */
+    .nav-user {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background-color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    .nav-user a {
+      text-decoration: none;
+      color: #007BFF;
+    }
+
+    .nav-user a:hover {
+      color: #0056b3;
+    }
+
+    /* Bug Form Container */
+    .form-container {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      width: 100%;
+      max-width: 480px;
+      margin: 2rem auto;
+      border-top: 4px solid #007BFF;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #444;
+    }
+
+    input, textarea, select {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      margin-top: 0.4rem;
+      transition: border 0.2s ease, background 0.2s ease;
+      width: 100%;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #007BFF;
+      background-color: #f0f8ff;
+      outline: none;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      padding: 0.9rem;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Bug List Styling */
+    .bugs-list {
+      max-width: 800px;
+      margin: 3rem auto;
+    }
+
+    .bug-card {
+      background: #ffffff;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+      position: relative;
+      border-left: 6px solid #6c757d; /* default */
+      transition: 0.2s;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .bug-card:hover {
+      background-color: #f7faff;
+      transform: scale(1.01);
+    }
+
+    /* Status Colors */
+    .bug-card[data-status="cleared"] {
+      border-left-color: #28a745;
+    }
+
+    .bug-card[data-status="ongoing"] {
+      border-left-color: #ffc107;
+    }
+
+    .bug-card[data-status="remained"] {
+      border-left-color: #dc3545;
+    }
+
+    /* Color-coded select options */
+    select option[value="cleared"] {
+      background-color: #d4edda;
+    }
+
+    select option[value="ongoing"] {
+      background-color: #fff3cd;
+    }
+
+    select option[value="remained"] {
+      background-color: #f8d7da;
+    }
+
+    /* Inside bug card */
+    .bug-card select {
+      width: 220px;
+      margin-top: 0.5rem;
+    }
+
+    .bug-card button {
+      margin-top: 0.7rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.95rem;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- User Profile Link (Top Right) -->
+  <div class="nav-user">
+    {% if request.user.is_authenticated %}
+      <a href="{% url 'profile' %}">
+        {{ request.user.username }}
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Bug Report Form -->
+  <div class="form-container">
+    <h2>Add New Bug</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label for="title">Bug Title</label>
+        <input type="text" id="title" name="bug_title" placeholder="Enter bug title" minlength="3" required />
+
+        <label for="description">Bug Description</label>
+        <textarea id="description" name="bug_description" rows="4" placeholder="Describe the issue..." required></textarea>
+
+        <label for="status">Status</label>
+        <select id="status" name="status" required>
+          <option value="">--Select Status--</option>
+          <option value="cleared">Cleared</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="remained">Remained</option>
+        </select>
+
+        <button type="submit">Submit Bug</button>
+    </form>
+  </div>
+
+  <!-- Bug List -->
+  <div class="bugs-list">
+    <h3>All Bug Reports</h3>
+    {% if all_bugs %}
+      <ul style="list-style: none; padding: 0;">
+        {% for bug in all_bugs %}
+          <li class="bug-card" data-status="{{ bug.status }}">
+            <form method="post" action="{% url 'update_bug' bug.id %}">
+                {% csrf_token %}
+                <strong>Title:</strong> {{ bug.bug_title }}<br>
+                <strong>Description:</strong> {{ bug.bug_description }}<br>
+                <label for="status_{{ bug.id }}"><strong>Status:</strong></label>
+                <select name="status" id="status_{{ bug.id }}">
+                  <option value="cleared" {% if bug.status == "cleared" %}selected{% endif %}>Cleared</option>
+                  <option value="ongoing" {% if bug.status == "ongoing" %}selected{% endif %}>Ongoing</option>
+                  <option value="remained" {% if bug.status == "remained" %}selected{% endif %}>Remained</option>
+                </select>
+                <button type="submit" name="update_bug">Update</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p style="text-align:center;">No bug reports submitted yet.</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>
